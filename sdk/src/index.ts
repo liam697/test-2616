@@ -1,7 +1,7 @@
 import { io } from "socket.io-client";
 
 let socket: any = null;
-let userId: any = null;
+let currentUser: any | null = null;
 let currentRoomId: string | null = null;
 let unreadCount = 0;
 let isChatOpen = true;
@@ -156,6 +156,7 @@ type Room = {
 
   socket.on("connect", () => {
     console.log("[ChatSDK] Socket connected:", socket.id);
+    createUserAfterReconnecting();
     updateSocketStatus("Online", "online");
     renderFormCreateUser(formContainer);
   });
@@ -267,6 +268,43 @@ function renderFormCreateUser(root: HTMLElement) {
   root.appendChild(submitBtn);
 }
 
+function createUserAfterReconnecting() {
+  if (currentUser) {
+    const data = {
+      name: currentUser.name,
+      email: currentUser.email,
+      dob: currentUser.dob,
+      gender: currentUser.gender,
+    };
+
+    socket.emit(
+      "sdk:user:create",
+      {
+        apiKey: SDK_CONFIG.apiKey,
+        agreedToTerms: true,
+        ...data,
+      },
+      (res: any) => {
+        if (!res.ok) {
+          alert(res.error.message);
+          return;
+        }
+
+        currentUser = res.data.user;
+
+        const formContainer = document.getElementById("sdk-form");
+        if (formContainer) formContainer.remove();
+
+        console.log("[SDK] User re-created", res.data.user);
+
+        if (currentRoomId) {
+          joinRoom(currentRoomId);
+        }
+      }
+    );
+  }
+}
+
 function createUser(data: {
   name: string;
   email: string;
@@ -286,7 +324,7 @@ function createUser(data: {
         return;
       }
 
-      userId = res.data.user.id;
+      currentUser = res.data.user;
 
       const formContainer = document.getElementById("sdk-form");
       if (formContainer) formContainer.remove();
@@ -421,11 +459,11 @@ function renderCreateRoomForm() {
 }
 
 function createRoom(roomName: string, maxUsers: number, startDate: any) {
-  if (!socket || !userId) return;
+  if (!socket || !currentUser.id) return;
 
   const payload: any = {
     apiKey: SDK_CONFIG.apiKey,
-    userId,
+    userId: currentUser.id,
     roomName,
     maxUsers,
     startDate: startDate,
@@ -454,7 +492,7 @@ function joinRoom(roomId: string) {
     "sdk:room:join",
     {
       apiKey: SDK_CONFIG.apiKey,
-      userId,
+      userId: currentUser.id,
       roomId,
     },
     (res: any) => {
@@ -498,7 +536,7 @@ function renderChatUI(roomId: string) {
 
     socket.emit("sdk:message:send", {
       apiKey: SDK_CONFIG.apiKey,
-      userId,
+      userId: currentUser.id,
       roomId,
       text: input.value,
     });
@@ -528,7 +566,7 @@ function updateSocketStatus(status: string, code: string) {
 
 function handleIncomingMessage(msg: any) {
   // tăng unread nếu là room đang không mở
-  if (msg.data.message.senderUserId !== userId && (msg.data.message.roomId !== currentRoomId || !isChatOpen)) {
+  if (msg.data.message.senderUserId !== currentUser.id && (msg.data.message.roomId !== currentRoomId || !isChatOpen)) {
     unreadCount++;
     updateUnreadBadge();
   }
@@ -593,10 +631,10 @@ function appendMessage(senderUserId: string, senderName: string, text: string, c
   const msgEl = document.createElement("div");
   msgEl.style.marginBottom = "15px";
 
-  if (senderUserId === userId) msgEl.style.textAlign = "right";
+  if (senderUserId === currentUser.id) msgEl.style.textAlign = "right";
 
   msgEl.innerHTML = `
-    <strong>${senderUserId !== userId ? senderName : 'You'}:</strong>
+    <strong>${senderUserId !== currentUser.id ? senderName : 'You'}:</strong>
     <span>${text}</span>
     <br>
     <span style='font-size: 80%;'>${timestampToDateTime(createdAt)}</span>

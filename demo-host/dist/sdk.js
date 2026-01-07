@@ -3403,7 +3403,7 @@
 
   // src/index.ts
   var socket = null;
-  var userId = null;
+  var currentUser = null;
   var currentRoomId = null;
   var unreadCount = 0;
   var isChatOpen = true;
@@ -3514,6 +3514,7 @@
     });
     socket.on("connect", () => {
       console.log("[ChatSDK] Socket connected:", socket.id);
+      createUserAfterReconnecting();
       updateSocketStatus("Online", "online");
       renderFormCreateUser(formContainer);
     });
@@ -3608,6 +3609,38 @@
     root.appendChild(agreeLabel);
     root.appendChild(submitBtn);
   }
+  function createUserAfterReconnecting() {
+    if (currentUser) {
+      const data = {
+        name: currentUser.name,
+        email: currentUser.email,
+        dob: currentUser.dob,
+        gender: currentUser.gender
+      };
+      socket.emit(
+        "sdk:user:create",
+        {
+          apiKey: SDK_CONFIG.apiKey,
+          agreedToTerms: true,
+          ...data
+        },
+        (res) => {
+          if (!res.ok) {
+            alert(res.error.message);
+            return;
+          }
+          currentUser = res.data.user;
+          const formContainer = document.getElementById("sdk-form");
+          if (formContainer)
+            formContainer.remove();
+          console.log("[SDK] User re-created", res.data.user);
+          if (currentRoomId) {
+            joinRoom(currentRoomId);
+          }
+        }
+      );
+    }
+  }
   function createUser(data) {
     socket.emit(
       "sdk:user:create",
@@ -3621,7 +3654,7 @@
           alert(res.error.message);
           return;
         }
-        userId = res.data.user.id;
+        currentUser = res.data.user;
         const formContainer = document.getElementById("sdk-form");
         if (formContainer)
           formContainer.remove();
@@ -3735,11 +3768,11 @@
     };
   }
   function createRoom(roomName, maxUsers, startDate) {
-    if (!socket || !userId)
+    if (!socket || !currentUser.id)
       return;
     const payload = {
       apiKey: SDK_CONFIG.apiKey,
-      userId,
+      userId: currentUser.id,
       roomName,
       maxUsers,
       startDate
@@ -3762,7 +3795,7 @@
       "sdk:room:join",
       {
         apiKey: SDK_CONFIG.apiKey,
-        userId,
+        userId: currentUser.id,
         roomId
       },
       (res) => {
@@ -3800,7 +3833,7 @@
         return;
       socket.emit("sdk:message:send", {
         apiKey: SDK_CONFIG.apiKey,
-        userId,
+        userId: currentUser.id,
         roomId,
         text: input.value
       });
@@ -3827,7 +3860,7 @@
     }
   }
   function handleIncomingMessage(msg) {
-    if (msg.data.message.senderUserId !== userId && (msg.data.message.roomId !== currentRoomId || !isChatOpen)) {
+    if (msg.data.message.senderUserId !== currentUser.id && (msg.data.message.roomId !== currentRoomId || !isChatOpen)) {
       unreadCount++;
       updateUnreadBadge();
     }
@@ -3878,10 +3911,10 @@
       return;
     const msgEl = document.createElement("div");
     msgEl.style.marginBottom = "15px";
-    if (senderUserId === userId)
+    if (senderUserId === currentUser.id)
       msgEl.style.textAlign = "right";
     msgEl.innerHTML = `
-    <strong>${senderUserId !== userId ? senderName : "You"}:</strong>
+    <strong>${senderUserId !== currentUser.id ? senderName : "You"}:</strong>
     <span>${text}</span>
     <br>
     <span style='font-size: 80%;'>${timestampToDateTime(createdAt)}</span>
