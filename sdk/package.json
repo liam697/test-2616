@@ -3,9 +3,12 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --format=iife --outfile=../test/sdk.js"
+    "build": "esbuild src/index.ts --bundle --format=iife --outfile=../demo-host/dist/sdk.js"
   },
   "devDependencies": {
     "esbuild": "^0.20.0"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.8.3"
   }
 }
