@@ -485,7 +485,7 @@ function renderChatUI(roomId: string) {
   }
 
   container.innerHTML = `
-    <div id="sdk-messages" style="height:321px; overflow:auto; border: 1px solid #333; border-radius: 4px; margin-bottom: 6px; padding: 6px;"></div>
+    <div id="sdk-messages" style="height:305px; overflow:auto; border: 1px solid #333; border-radius: 4px; margin-bottom: 6px; padding: 6px;"></div>
     <input id="sdk-input" style="width: calc(100% - 60px);" placeholder="Type message..." />
     <button id="sdk-send">Send</button>
   `;
