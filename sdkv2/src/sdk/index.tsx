@@ -2,6 +2,7 @@ import { createRoot } from "react-dom/client";
 import { ChatWidget } from "./ui/ChatWidget";
 import { initSocket } from "./socket/socket";
 import { useChatStore } from "./store/chat.store";
+import cssText from "./styles/tailwind.css?inline";
 
 (function () {
   const script = document.currentScript as HTMLScriptElement | null;
@@ -30,6 +31,11 @@ import { useChatStore } from "./store/chat.store";
   });
   
   initSocket();
+
+  const style = document.createElement("style");
+  style.id = "chat-sdk-style";
+  style.textContent = cssText;
+  document.head.appendChild(style);
 
   const container = document.createElement("div");
   container.id = "chat-sdk-root";
