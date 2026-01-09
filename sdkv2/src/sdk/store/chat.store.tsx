@@ -22,6 +22,8 @@ type ChatState = {
   setRooms: (rooms: any[]) => void;
   incUnread: () => void;
   resetUnread: () => void;
+  incRoomUnread: (roomId: string) => void;
+  resetRoomUnread: (roomId: string) => void;
   addMessage: (m: any) => void;
   clearMessages: () => void;
   setConnectionStatus: (s: ChatState["connectionStatus"]) => void;
@@ -47,6 +49,18 @@ export const useChatStore = create<ChatState>((set, get) => ({
   setRooms: (rooms) => set({ rooms }),
   incUnread: () => set((s) => ({ unread: s.unread + 1 })),
   resetUnread: () => set({ unread: 0 }),
+  incRoomUnread: (roomId) =>
+    set((s) => ({
+      rooms: s.rooms.map((r) =>
+        r.id === roomId ? { ...r, unread: (r.unread || 0) + 1 } : r
+      ),
+    })),
+  resetRoomUnread: (roomId) =>
+    set((s) => ({
+      rooms: s.rooms.map((r) =>
+        r.id === roomId ? { ...r, unread: 0 } : r
+      ),
+    })),
   addMessage: (m) => set((s) => ({ messages: [...s.messages, m] })),
   clearMessages: () => set({ messages: [] }),
   setConnectionStatus: (status) => set({ connectionStatus: status }),
@@ -65,7 +79,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       roomId,
       messages,
       step: 3,
-      unread: 0,
     });
   },
 }));

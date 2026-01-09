@@ -63,26 +63,36 @@ export function StepRoom() {
                   "0 1px 3px rgba(0,0,0,0.06)";
               }}
             >
-              <div style={{ width: "100%" }}>
-                <div
-                  style={{
-                    fontWeight: isActive ? 600 : 500,
-                    fontSize: 14,
-                    color: "#222",
-                  }}
-                >
-                  {room.name}
-                </div>
+              <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+								<div>
+									<div style={{ fontWeight: isActive ? 600 : 500 }}>
+										{room.name}
+									</div>
+									<div style={{ fontSize: 12, color: "#666" }}>
+										{room.members}/{room.maxUsers} members
+									</div>
+								</div>
 
-                <div
-                  style={{
-                    fontSize: 12,
-                    color: "#666",
-                  }}
-                >
-                  {room.members}/{room.maxUsers} members
-                </div>
-              </div>
+								{room.unread > 0 && (
+									<div
+										style={{
+											minWidth: 20,
+											height: 20,
+											borderRadius: 10,
+											background: "#ff4d4f",
+											color: "#fff",
+											fontSize: 12,
+											fontWeight: 600,
+											display: "flex",
+											alignItems: "center",
+											justifyContent: "center",
+											padding: "0 6px",
+										}}
+									>
+										{room.unread}
+									</div>
+								)}
+							</div>
             </List.Item>
           );
         }}

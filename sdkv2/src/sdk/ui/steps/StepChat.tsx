@@ -4,14 +4,14 @@ import { useChatStore } from "../../store/chat.store";
 import { getSocket, joinRoom, sendMessage } from "../../socket/socket";
 
 export function StepChat() {
-  const { user, roomId, messages, addMessage, resetUnread } = useChatStore();
+  const { user, roomId, messages, addMessage, resetUnread, resetRoomUnread } = useChatStore();
   const [text, setText] = useState("");
 	const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!roomId) return;
     joinRoom(roomId);
-    resetUnread();
+		resetRoomUnread(roomId);
   }, [roomId]);
 
 	useEffect(() => {

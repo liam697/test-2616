@@ -12,6 +12,7 @@ export function ChatWidget() {
     toggleOpen,
     connectionStatus,
     scriptTagConfig,
+		rooms,
   } = useChatStore();
 
   const position = scriptTagConfig?.position || "bottom-right";
@@ -37,6 +38,11 @@ export function ChatWidget() {
           left: 0,
 					paddingTop: 32,
         };
+
+	const totalUnread = rooms.reduce(
+		(sum, r) => sum + (r.unread || 0),
+		0
+	);
 
   return (
     <div style={wrapperStyle}>
@@ -71,7 +77,7 @@ export function ChatWidget() {
         </Card>
       )}
 
-      <Badge count={unread} showZero={false} offset={[-2, 2]}>
+      <Badge count={totalUnread} showZero={false} offset={[-2, 2]}>
         <Button
           type="primary"
           shape="circle"

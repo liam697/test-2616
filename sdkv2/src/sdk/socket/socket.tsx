@@ -44,17 +44,20 @@ export function initSocket() {
       isOpen,
       addMessage,
       incUnread,
+      incRoomUnread,
     } = useChatStore.getState();
 
     const message = msg.data.message;
 
-    addMessage(message);
+    if (message.roomId === roomId) {
+      addMessage(message);
+    }
 
     if (
       message.senderUserId !== user?.id &&
       (message.roomId !== roomId || !isOpen)
     ) {
-      incUnread();
+      incRoomUnread(message.roomId);
     }
   });
 
@@ -76,22 +79,25 @@ export function fetchRooms() {
 
   socket.emit(
     "sdk:room:list",
-    { 
-      apiKey: config.apiKey 
-    },
+    { apiKey: config.apiKey },
     (res: any) => {
-      if (!res.ok) {
-        console.error("[ChatSDK] Failed to fetch rooms", res);
-        return;
-      }
+      if (!res?.ok) return;
 
-      const rooms = Array.isArray(res.data)
+      const incomingRooms = Array.isArray(res.data)
         ? [...res.data].reverse()
         : [];
 
-      useChatStore.getState().setRooms(rooms);
+      const prevRooms = useChatStore.getState().rooms;
 
-      // useChatStore.getState().setRooms(res.data);
+      const mergedRooms = incomingRooms.map((room: any) => {
+        const prev = prevRooms.find((r) => r.id === room.id);
+        return {
+          ...room,
+          unread: prev?.unread || 0,
+        };
+      });
+
+      useChatStore.getState().setRooms(mergedRooms);
     }
   );
 }
