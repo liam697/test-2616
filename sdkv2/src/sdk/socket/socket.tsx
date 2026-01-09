@@ -2,6 +2,7 @@ import { io, Socket } from "socket.io-client";
 import { useChatStore } from "../store/chat.store";
 import { getSDKConfig } from "../config";
 import { informConfigError } from "../common";
+import { message } from "antd";
 
 let socket: Socket;
 
@@ -12,6 +13,8 @@ export function initSocket() {
     return;
   }
 
+  const { setConnectionStatus } = useChatStore.getState();
+
   socket = io(config.apiUrl, {
     transports: ["websocket"],
     auth: { apiKey: config.apiKey },
@@ -20,12 +23,37 @@ export function initSocket() {
     reconnectionDelay: 1000,
   });
 
-  socket.on("sdk:message:new", (msg) => {
-    const { roomId } = useChatStore.getState();
-    if (msg.data.message.roomId !== roomId) {
-      useChatStore.getState().incUnread();
+  socket.on("connect", () => {
+    setConnectionStatus("online");
+  });
+
+  socket.on("disconnect", () => {
+    setConnectionStatus("offline");
+  });
+
+  socket.on("connect_error", () => {
+    setConnectionStatus("connecting");
+  });
+
+  socket.on("sdk:message:new", (msg: any) => {
+    const {
+      user,
+      roomId,
+      isOpen,
+      addMessage,
+      incUnread,
+    } = useChatStore.getState();
+
+    const message = msg.data.message;
+
+    addMessage(message);
+
+    if (
+      message.senderUserId !== user?.id &&
+      (message.roomId !== roomId || !isOpen)
+    ) {
+      incUnread();
     }
-    useChatStore.getState().addMessage(msg.data.message);
   });
 
   return socket;
@@ -55,7 +83,13 @@ export function fetchRooms() {
         return;
       }
 
-      useChatStore.getState().setRooms(res.data);
+      const rooms = Array.isArray(res.data)
+        ? [...res.data].reverse()
+        : [];
+
+      useChatStore.getState().setRooms(rooms);
+
+      // useChatStore.getState().setRooms(res.data);
     }
   );
 }
@@ -84,7 +118,12 @@ export function joinRoom(roomId: string) {
     },
     (res: any) => {
       if (!res?.ok) {
-        console.error("[ChatSDKV2] joinRoom failed:", res?.error);
+        message.error((res?.error?.message ? res?.error?.message : 'Unknown Reason'));
+        useChatStore.setState({
+          roomId: null,
+          messages: [],
+          step: 2,
+        });
         return;
       }
 
@@ -182,6 +221,8 @@ export function createRoom(values: any) {
         alert(res.error?.message || "Failed to create room");
         return;
       }
+
+      fetchRooms();
 
       useChatStore.getState().setRoom(res.data.room.id);
       useChatStore.getState().setStep(3);
