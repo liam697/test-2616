@@ -41,9 +41,7 @@ type Room = {
   }
 
   if (SDK_CONFIG.position !== "bottom-right" && SDK_CONFIG.position !== "bottom-left") {
-    console.error(
-      "[ChatSDK] data-position must be 'bottom-right' or 'bottom-left'"
-    );
+    console.error("[ChatSDK] data-position must be 'bottom-right' or 'bottom-left'");
     return;
   }
 
@@ -295,7 +293,7 @@ function createUserAfterReconnecting() {
         const formContainer = document.getElementById("sdk-form");
         if (formContainer) formContainer.remove();
 
-        console.log("[SDK] User re-created", res.data.user);
+        console.log("[ChatSDK] User re-created", res.data.user);
 
         if (currentRoomId) {
           joinRoom(currentRoomId);
@@ -329,7 +327,7 @@ function createUser(data: {
       const formContainer = document.getElementById("sdk-form");
       if (formContainer) formContainer.remove();
 
-      console.log("[SDK] User created", res.data.user);
+      console.log("[ChatSDK] User created", res.data.user);
 
       fetchRooms();
     }
@@ -344,7 +342,7 @@ function fetchRooms() {
     { apiKey: SDK_CONFIG.apiKey },
     (res: any) => {
       if (!res.ok) {
-        console.error("[SDK] Failed to fetch rooms", res);
+        console.error("[ChatSDK] Failed to fetch rooms", res);
         return;
       }
 
@@ -501,7 +499,7 @@ function joinRoom(roomId: string) {
         return;
       }
 
-      console.log("[SDK] Joined room", roomId);
+      console.log("[ChatSDK] Joined room", roomId);
       enterRoom(roomId);
     }
   );
