@@ -3,6 +3,7 @@ import { useChatStore } from "../store/chat.store";
 import { getSDKConfig } from "../config";
 import { informConfigError } from "../common";
 import { message } from "antd";
+import dayjs from "dayjs";
 
 let socket: Socket;
 
@@ -25,6 +26,7 @@ export function initSocket() {
 
   socket.on("connect", () => {
     setConnectionStatus("online");
+    createUserAfterReconnecting();
   });
 
   socket.on("disconnect", () => {
@@ -101,6 +103,8 @@ export function joinRoom(roomId: string) {
     return;
   }
 
+  fetchRooms();
+
   const socket = getSocket();
   const { user } = useChatStore.getState();
 
@@ -131,11 +135,13 @@ export function joinRoom(roomId: string) {
         roomId,
         step: 3,
       });
+
+      fetchRooms();
     }
   );
 }
 
-export function createUser(values: any) {
+export function createUser(values: any, createUserConfig: any = {}) {
   const config = getSDKConfig();
   if (!config) {
     informConfigError();
@@ -161,7 +167,20 @@ export function createUser(values: any) {
       }
 
       useChatStore.getState().setUser(res.data.user);
-      useChatStore.getState().setStep(2);
+      
+      if (createUserConfig?.reconnect) {
+        fetchRooms();
+
+        let roomId = useChatStore?.getState()?.roomId;
+        
+        if (roomId) {
+          joinRoom(roomId);
+        } else {
+          useChatStore.getState().setStep(2);
+        }
+      } else {
+        useChatStore.getState().setStep(2);
+      }
     }
   );
 }
@@ -228,4 +247,17 @@ export function createRoom(values: any) {
       useChatStore.getState().setStep(3);
     }
   );
+}
+
+export function createUserAfterReconnecting() {
+  const { user } = useChatStore.getState();
+  if (!user) return;
+
+  createUser({
+    ...user,
+    dob: user.dob ? dayjs(user.dob) : null,
+    agree: true,
+  }, {
+    reconnect: true,
+  });
 }
